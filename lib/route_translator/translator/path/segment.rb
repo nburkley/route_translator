@@ -8,14 +8,10 @@ module RouteTranslator
             opts = { scope: scope, locale: locale }
             res = I18n.translate(str, opts)
 
-            if RouteTranslator.config.disable_fallback && locale.to_s != I18n.default_locale.to_s
-              opts[:fallback] = true
-            else
-              opts[:default] = str
-            end
-
             if res.starts_with?('translation missing') || res.is_a?(Hash)
-              opts[:scope] = [:routes]
+              opts = opts
+                     .merge(scope: :routes)
+                     .merge(fallback_options(str, locale))
               res = I18n.translate(str, opts)
             end
 
@@ -41,6 +37,14 @@ module RouteTranslator
           match = TRANSLATABLE_SEGMENT.match(segment)[1] if TRANSLATABLE_SEGMENT.match(segment)
 
           (translate_string(match, locale, scope) || segment) + appended_part.to_s
+        end
+
+        def fallback_options(str, locale)
+          if RouteTranslator.config.disable_fallback && locale.to_s != I18n.default_locale.to_s
+            { fallback: true }
+          else
+            { default: str }
+          end
         end
       end
     end
